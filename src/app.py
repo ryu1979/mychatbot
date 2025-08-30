@@ -22,111 +22,143 @@ language = 'en'
 gptlang = 'english'
 #session = {}
 session = []
+session.append([])
+current_session = []
+current_session.append(session[-1])
 
 app = Flask(__name__)
 
 @app.route("/", methods=("GET", "POST"))
 def index():
     if request.method == "POST":
-        #animal = request.form["animal"]
-        #place = request.form["place"]
-        #person = request.form["person"]
-
-        #prompt = "write a Children's Story in "+gptlang+" about a "+animal+" that goes to "+place+" and meets "+person
-
-        prompt = request.form["prompt"]
-        print(prompt)
 
         model = request.form["model"]
 
-        if model == "gpt":
-            client = OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY")
-            )
-            #if model not in session:
-            #    session[model] = []
-            #session[model].append({"role": "user", "content": prompt})
-            session.append({"role": "user", "content": prompt, "parts": [prompt]})
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    store=True,
-                    messages=[msg for msg in session if msg["role"] == "user"]
-                )
-                mytext = response.choices[0].message.content
-                session.append({"role": "model", "content": prompt, "parts": [mytext]})
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                mytext = "Sorry, there was an error processing your request."
+        if model == "clear":
+            if len(session[-1]) > 0:
+                session.append([])
+            current_session[0] = session[-1]
+            print(f"there are {len(session)} sessions")
+            return render_template("index.html", result=None)
 
-        elif model == "claude":
-            client = Anthropic(
-                api_key=os.getenv("ANTHROPIC_API_KEY")
-            )
-            try:
-                response = client.messages.create(
-                    model="claude-3-5-haiku-latest",
-                    max_tokens=1000,
-                    system="You are a world-class poet. Respond only with short poems.",
-                    messages=[
-                        {
-                            "role": "user", 
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": prompt
-                                }
-                            ]
-                        }
-                    ]
-                )
-                mytext = response.content
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                mytext = "Sorry, there was an error processing your request."
+        elif model.startswith("previous"):
+            chatnum = int(model.replace('previous',''))
+            print(f"{len(session)} sessions and trying to go back {chatnum} chats")
+            if len(session) > chatnum:
+                if(len(current_session[0])) == 0:
+                    session[-1] = session.pop(-(chatnum+1))
+                else:
+                    session.append(session.pop(-(chatnum+1)))
+                current_session[0] = session[-1]
+                mytext = f"restoring to {chatnum} chats ago"
+                mytext = markdown(mytext)
+                print(f"loading {chatnum} chats ago")
+            else:
+                mytext = f"can't go back {chatnum} chats ago"
+            history = ""
+            for i in range(len(current_session[0])):
+                history = f"""
+                            {history}
+                            {current_session[0][i]['role']}: {current_session[0][i]['parts'][0]}
+                        """
+            history = markdown(history)
+            return render_template("index.html", result=mytext, history=history)
 
-        elif model == "gemini":            
-            genai.configure(
-                api_key=os.getenv("GEMINI_API_KEY")
-            )
-            m = genai.GenerativeModel('gemini-2.5-flash')
-            #if model not in session:
-            #    session[model] = []
-            #session[model].append({"role": "user", "parts": [prompt]})
-            session.append({"role": "user", "content": prompt, "parts": [prompt]})
-            try:
-                response = m.generate_content([{"role": msg["role"], "parts": msg["parts"]} for msg in session])
-                mytext = response.text
-                session.append({"role": "model", "content": mytext, "parts": [mytext]})
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                mytext = "Sorry, there was an error processing your request."
+        else:
+            prompt = request.form["prompt"]
+            print(prompt)
 
-        elif model == "grok":
-            client = OpenAI(
-                api_key=os.getenv("GROK_API_KEY"),
-                base_url="https://api.x.ai/v1",
-            )
-            try:
-                response = client.chat.completions.create(
-                    model="grok-3",
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=1000,
-                    temperature=0.2,  # lower temperature for more deterministic answers
+            if model == "claude":
+                client = Anthropic(
+                    api_key=os.getenv("ANTHROPIC_API_KEY")
                 )
-                mytext = response.choices[0].message.content
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                mytext = "Sorry, there was an error processing your request."
-        
-        print(mytext)
-        mytext = markdown(mytext)
-        #myobj = gTTS(text=mytext, lang=language, slow=False)
-        #myobj.save("chatgpt.mp3")
-        #os.system("chatgpt.mp3")
-        return render_template("index.html", result=mytext, prompt=prompt)
+                try:
+                    response = client.messages.create(
+                        model="claude-3-5-haiku-latest",
+                        max_tokens=1000,
+                        system="You are a world-class poet. Respond only with short poems.",
+                        messages=[
+                            {
+                                "role": "user", 
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": prompt
+                                    }
+                                ]
+                            }
+                        ]
+                    )
+                    mytext = response.content
+                except Exception as e:
+                    print(f"Exception occurred: {e}")
+                    mytext = "Sorry, there was an error processing your request."
+
+            elif model == "gemini":            
+                genai.configure(
+                    api_key=os.getenv("GEMINI_API_KEY")
+                )
+                m = genai.GenerativeModel('gemini-2.5-flash')
+                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
+                try:
+                    response = m.generate_content([{"role": msg["role"], "parts": msg["parts"]} for msg in current_session[0]])
+                    mytext = response.text
+                    current_session[0].append({"role": "model", "content": mytext, "parts": [mytext]})
+                except Exception as e:
+                    print(f"Exception occurred: {e}")
+                    mytext = "Sorry, there was an error processing your request."
+
+            elif model == "grok":
+                client = OpenAI(
+                    api_key=os.getenv("GROK_API_KEY"),
+                    base_url="https://api.x.ai/v1",
+                )
+                try:
+                    response = client.chat.completions.create(
+                        model="grok-3",
+                        messages=[
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=1000,
+                        temperature=0.2,  # lower temperature for more deterministic answers
+                    )
+                    mytext = response.choices[0].message.content
+                except Exception as e:
+                    print(f"Exception occurred: {e}")
+                    mytext = "Sorry, there was an error processing your request."
+            
+            else:  # default to OpenAI
+                client = OpenAI(
+                    api_key=os.getenv("OPENAI_API_KEY")
+                )
+                try:
+                    current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
+                except Exception as e:
+                    print(f"Exception occurred: {e}")
+                    mytext = "Sorry, there was an error processing your request."
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        store=True,
+                        messages=[msg for msg in current_session[0] if msg["role"] == "user"]
+                    )
+                    mytext = response.choices[0].message.content
+                    current_session[0].append({"role": "model", "content": prompt, "parts": [mytext]})
+                except Exception as e:
+                    print(f"Exception occurred: {e}")
+                    mytext = "Sorry, there was an error processing your request."
+            
+            print(mytext)
+            history = ""
+            for i in range(len(current_session[0])):
+                history = f"""
+                            {history}
+                            {current_session[0][i]['role']}: {current_session[0][i]['parts'][0]}
+                        """
+            mytext = markdown(mytext)
+            history = markdown(history)
+
+            return render_template("index.html", result=mytext, prompt=prompt, history=history)
     else:
         return render_template("index.html", result=None)
 
