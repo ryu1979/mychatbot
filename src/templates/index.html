@@ -24,10 +24,10 @@
 						<div class="result">
 							<ul class="actions">
 								<li>
-									<button type="submit" id="gpt" name="model" value="gpt" class="button">GPT</button>
-									<button type="submit" id="gemini" name="model" value="gemini" class="button">Gemini</button>
-									<button type="submit" id="claude" name="model" value="claude" class="button">Claude</button>
-									<button type="submit" id="grok" name="model" value="grok" class="button">xAI</button>
+									<button type="submit" id="gpt" name="model" value="gpt" class="button primary">GPT</button>
+									<button type="submit" id="gemini" name="model" value="gemini" class="button primary">Gemini</button>
+									<button type="submit" id="claude" name="model" value="claude" class="button primary">Claude</button>
+									<button type="submit" id="grok" name="model" value="grok" class="button primary">xAI</button>
 								</li>
 							</ul>
 						</div>
@@ -70,32 +70,18 @@
 					<section id="four">
 						<h2>Previous Chats</h2>
 						<form action="/" method="post">
-						<div class="row">
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous1" name="model" value="previous1" class="button"><img src="{{ url_for('static', filename='images/thumbs/01.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 1</h3>
-							</article>
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous2" name="model" value="previous2" class="button"><img src="{{ url_for('static', filename='images/thumbs/02.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 2</h3>
-							</article>
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous3" name="model" value="previous3" class="button"><img src="{{ url_for('static', filename='images/thumbs/03.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 3</h3>
-							</article>
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous4" name="model" value="previous4" class="button"><img src="{{ url_for('static', filename='images/thumbs/04.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 4</h3>
-							</article>
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous5" name="model" value="previous5" class="button"><img src="{{ url_for('static', filename='images/thumbs/05.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 5</h3>
-							</article>
-							<article class="col-6 col-12-xsmall work-item">
-								<button type="submit" id="previous6" name="model" value="previous6" class="button"><img src="{{ url_for('static', filename='images/thumbs/06.jpg') }}" alt="" /></button>
-								<h3>Previous Chat 6</h3>
-							</article>
-						</div>
+							<div class="result">
+								<ul class="actions">
+									<li>
+										<button type="submit" id="previous1" name="model" value="previous1" class="button">Previous Chat 1</button>
+										<button type="submit" id="previous2" name="model" value="previous2" class="button">Previous Chat 2</button>
+										<button type="submit" id="previous3" name="model" value="previous3" class="button">Previous Chat 3</button>
+										<button type="submit" id="previous4" name="model" value="previous4" class="button">Previous Chat 4</button>
+										<button type="submit" id="previous5" name="model" value="previous5" class="button">Previous Chat 5</button>
+										<button type="submit" id="previous6" name="model" value="previous6" class="button">Previous Chat 6</button>
+									</li>
+								</ul>
+							</div>
 						</form>
 					</section>
 
