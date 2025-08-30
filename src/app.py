@@ -73,23 +73,15 @@ def index():
                     api_key=os.getenv("ANTHROPIC_API_KEY")
                 )
                 try:
+                    current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
+                    messages = [{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} for msg in current_session[0]]
                     response = client.messages.create(
                         model="claude-3-5-haiku-latest",
-                        max_tokens=1000,
-                        system="You are a world-class poet. Respond only with short poems.",
-                        messages=[
-                            {
-                                "role": "user", 
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": prompt
-                                    }
-                                ]
-                            }
-                        ]
+                        max_tokens=100,
+                        messages = messages
                     )
-                    mytext = response.content
+                    mytext = response.content[0].text
+                    current_session[0].append({"role": "model", "content": mytext, "parts": [mytext]})
                 except Exception as e:
                     print(f"Exception occurred: {e}")
                     mytext = "Sorry, there was an error processing your request."
