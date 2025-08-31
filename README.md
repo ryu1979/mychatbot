@@ -1,8 +1,11 @@
-# Kubernetes Hello World with Cloud Code
+# Chat Bot with Cloud Code - GPT/Gemini/Claude/Grok
 
-"Hello World" is a Kubernetes application that contains a single
+"mychatbot" is a sample Kubernetes Flask app that lets you chat with GPT/Gemini/Claude/Grok LLM models. You'll be able to switch between LLM models while maintaining the context of your chat. This is a combination of various templates I glued together. The Flask app.py originally came from an OpenAI template which I modified to include other LLM's. The frontend code came from [HTML5Up](https://html5up.net/) which I modified for the chatbot stuff. The Kubernetes scaffolding came from a sample Google Cloud Code app.
+
+This is a Kubernetes application that contains a single
 [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and a corresponding
-[Service](https://kubernetes.io/docs/concepts/services-networking/service/). The Deployment contains a web server that renders a simple webpage.
+[Service](https://kubernetes.io/docs/concepts/services-networking/service/). The Deployment was originally a Hello World app that I modified. 
+
 
 For details on how to use this sample as a template in Cloud Code, read the documentation for Cloud Code for [VS Code](https://cloud.google.com/code/docs/vscode/quickstart-local-dev?utm_source=ext&utm_medium=partner&utm_campaign=CDR_kri_gcp_cloudcodereadmes_012521&utm_content=-) or [IntelliJ](https://cloud.google.com/code/docs/intellij/quickstart-k8s?utm_source=ext&utm_medium=partner&utm_campaign=CDR_kri_gcp_cloudcodereadmes_012521&utm_content=-).
 
