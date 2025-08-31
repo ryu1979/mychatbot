@@ -4,23 +4,23 @@
 
 ## Quick Start
 
-1. Get API Keys from [OpenAI](https://platform.openai.com/settings/organization/api-keys), [Gemini](https://aistudio.google.com/apikey), [Claude](https://console.anthropic.com/), and [Grok](https://console.x.ai/home). Create accounts on their respec
+1. Get API Keys from [OpenAI](https://platform.openai.com/settings/organization/api-keys), [Gemini](https://aistudio.google.com/apikey), [Claude](https://console.anthropic.com/), and [Grok](https://console.x.ai/home). Some of these models charge for tokens.
    
-3. Add .env file to _src_ directory and
+2. Rename _.env_sample_ to _.env_ in the _src_ directory and fill in your API keys
    
-4. Install the requirements
+3. Install the requirements
 
    ```
    $ pip install -r requirements.txt
    ```
 
-5. Run the app
+4. Run the app
 
    ```
    $ python -m flask run
    ```
 
-6. View your app http://localhost:5000/
+5. View your app http://localhost:5000/
 
 ## Kubernetes with Google Cloud Code Setup
 
