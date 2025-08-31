@@ -1,22 +1,26 @@
-# Chat Bot with Cloud Code - GPT/Gemini/Claude/Grok
+# Multi-Model Chat Bot - GPT/Gemini/Claude/Grok
 
 "mychatbot" is a sample Kubernetes Flask app that lets you chat with GPT/Gemini/Claude/Grok LLM models. You'll be able to switch between LLM models while maintaining the context of your chat. This is a combination of various templates I glued together. The Flask app.py originally came from an OpenAI template which I modified to include other LLM's. The frontend code came from [HTML5Up](https://html5up.net/) which I modified for the chatbot stuff. The Kubernetes scaffolding came from a sample Google Cloud Code app.
 
 ## Quick Start
 
-1. Install the requirements
+1. Get API Keys from [OpenAI](https://platform.openai.com/settings/organization/api-keys), [Gemini](https://aistudio.google.com/apikey), [Claude](https://console.anthropic.com/), and [Grok](https://console.x.ai/home). Create accounts on their respec
+   
+3. Add .env file to _src_ directory and
+   
+4. Install the requirements
 
    ```
    $ pip install -r requirements.txt
    ```
 
-2. Run the app
+5. Run the app
 
    ```
    $ python -m flask run
    ```
 
-3. View your app http://localhost:5000/
+6. View your app http://localhost:5000/
 
 ## Kubernetes with Google Cloud Code Setup
 
