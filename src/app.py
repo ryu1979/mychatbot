@@ -67,17 +67,17 @@ def index():
         else:
             prompt = request.form["prompt"]
             print(prompt)
+            current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
 
             if model == "claude":
                 client = Anthropic(
                     api_key=os.getenv("ANTHROPIC_API_KEY")
                 )
                 try:
-                    current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
                     messages = [{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} for msg in current_session[0]]
                     response = client.messages.create(
                         model="claude-3-5-haiku-latest",
-                        max_tokens=100,
+                        max_tokens=1000,
                         messages = messages
                     )
                     mytext = response.content[0].text
@@ -91,7 +91,6 @@ def index():
                     api_key=os.getenv("GEMINI_API_KEY")
                 )
                 m = genai.GenerativeModel('gemini-2.5-flash')
-                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
                 try:
                     response = m.generate_content([{"role": msg["role"], "parts": msg["parts"]} for msg in current_session[0]])
                     mytext = response.text
@@ -108,13 +107,12 @@ def index():
                 try:
                     response = client.chat.completions.create(
                         model="grok-3",
-                        messages=[
-                            {"role": "user", "content": prompt}
-                        ],
+                        messages = [{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} for msg in current_session[0]],
                         max_tokens=1000,
                         temperature=0.2,  # lower temperature for more deterministic answers
                     )
                     mytext = response.choices[0].message.content
+                    current_session[0].append({"role": "model", "content": mytext, "parts": [mytext]})
                 except Exception as e:
                     print(f"Exception occurred: {e}")
                     mytext = "Sorry, there was an error processing your request."
@@ -124,18 +122,13 @@ def index():
                     api_key=os.getenv("OPENAI_API_KEY")
                 )
                 try:
-                    current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
-                except Exception as e:
-                    print(f"Exception occurred: {e}")
-                    mytext = "Sorry, there was an error processing your request."
-                try:
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         store=True,
-                        messages=[msg for msg in current_session[0] if msg["role"] == "user"]
+                        messages=current_session[0]
                     )
                     mytext = response.choices[0].message.content
-                    current_session[0].append({"role": "model", "content": prompt, "parts": [mytext]})
+                    current_session[0].append({"role": "model", "content": mytext, "parts": [mytext]})
                 except Exception as e:
                     print(f"Exception occurred: {e}")
                     mytext = "Sorry, there was an error processing your request."
