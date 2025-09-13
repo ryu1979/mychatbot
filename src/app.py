@@ -125,7 +125,7 @@ def index():
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         store=True,
-                        messages=current_session[0]
+                        messages = [{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} for msg in current_session[0]]
                     )
                     mytext = response.choices[0].message.content
                     current_session[0].append({"role": "model", "content": mytext, "parts": [mytext]})
@@ -149,5 +149,5 @@ def index():
 
 if __name__ == '__main__':
     signal(SIGINT, handler)
-    server_port = os.environ.get('PORT', '8080')
+    server_port = os.environ.get('PORT', '80')
     app.run(debug=False, port=server_port, host='0.0.0.0')
