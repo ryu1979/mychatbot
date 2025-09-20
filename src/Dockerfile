@@ -5,7 +5,7 @@ FROM python:3.12-alpine
 WORKDIR /app
 
 # copy the requirements file used for dependencies
-COPY src/requirements.txt .
+COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
