@@ -1,0 +1,7 @@
+Flask==2.3.3
+debugpy # Required for debugging
+google-generativeai==0.8.5
+anthropic==0.56.0
+openai==1.93.0
+markdown2==2.5.4
+dotenv==0.9.9
