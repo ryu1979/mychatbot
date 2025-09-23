@@ -164,5 +164,5 @@ def index():
 
 if __name__ == '__main__':
     signal(SIGINT, handler)
-    server_port = os.environ.get('PORT', '5000')
+    server_port = os.environ.get('PORT', '80')
     app.run(debug=False, port=server_port, host='0.0.0.0')
