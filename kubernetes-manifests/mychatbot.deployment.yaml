@@ -6,20 +6,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: python-hello-world
+  name: mychatbot
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: python-hello-world
+      app: mychatbot
   template:
     metadata:
       labels:
-        app: python-hello-world
+        app: mychatbot
     spec:
       containers:
       - name: server
-        image: python-hello-world
+        image: mychatbot
         ports:
         - containerPort: 8080
         env:

@@ -6,11 +6,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: python-hello-world-external
+  name: mychatbot-external
 spec:
   type: LoadBalancer
   selector:
-    app: python-hello-world
+    app: mychatbot
   ports:
   - name: http
     port: 80
