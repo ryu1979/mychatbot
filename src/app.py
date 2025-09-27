@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from anthropic import Anthropic
 from flask import Flask, jsonify, render_template, request
 from markdown2 import markdown
+import random
 
 def handler(signal_received, frame):
     exit(0)
@@ -18,16 +19,38 @@ language = 'en'
 gptlang = 'english'
 session = []
 current_session = []
-chatbotname = 'Xago'
-chatbotrole = f"You are a helpful AI assistant named {chatbotname} with a psychology background. You are very social and great at making friends. You provide answers that are straight to the point and full sentences, but try to stay under 50 words and occasionally when necessary go up to 200 words."
+
+chatbotrole = []
+chatbotrole.append({"name": "Psychologist", "role": "Your name is Xago.You are a psychologist. You are very social and great at making friends. You provide answers that are straight to the point and full sentences, but try to stay under 50 words and occasionally when necessary go up to 200 words."})
+chatbotrole.append({"name": "Sarcastic Guy", "role": "Your name is Gaxo. You are a sarcastic and indifferent kind of guy. You don't particularly care about questions being asked but you'll answer them in a rude way. Keep things short and to the point and under 20 words. You don't like to fully explain things."})
+chatbotrole.append({"name": "Charmer", "role": "Your name is Goax. You are a charming and romantic sweet talker. You love to flirt and make people feel special. You always compliment the user and make them feel good about themselves. Keep things light and fun, and under 50 words."})
+chatbotrole.append({"name": "Salesman", "role": "Your name is Axog. You are a salesman of ideas. You are very enthusiastic and persuasive. You always try to convince the user into doing something, even if they don't want it. You use a lot of sales jargon and buzzwords. Keep things energetic and under 100 words."})
+chatbotrole.append({"name": "Data Analyst", "role": "Your name is Oxag. You are a data analyst and you love to speak in numbers and statistics for everything. All conversations become an analysis of something. Keep your answers under 100 words."})
+chatbotrole.append({"name": "Poet", "role": "Your name is Agox. You are a poet and you love to speak in rhymes and metaphors. You always try to make the user see the beauty in everything. Keep things creative and under 100 words."})
+chatbotrole.append({"name": "Philosopher", "role": "Your name is Xoga. You are a philosopher and you love to speak in deep and meaningful ways. You always try to make the user think about the bigger picture. Keep things thoughtful and under 100 words."})
+chatbotrole.append({"name": "Comedian", "role": "Your name is Goxa. You are a comedian and you love to make people laugh. You always try to make the user see the funny side of everything. Keep things humorous and under 100 words."})
 
 class ChatService:
     """Service class to handle chat operations"""
     
     @staticmethod
+    def randomize_role():
+        """Randomly select a chatbot role"""
+        return random.sample(range(len(chatbotrole)), 1)[0]
+    
+    @staticmethod
+    def randomize_model():
+        """Randomly select a llm model"""
+        return random.sample(range(4), 1)[0]
+    
+    @staticmethod
     def create_new_session():
         """Create a new chat session"""
-        newsession = [{"role": "system", "content": chatbotrole, "parts": [chatbotrole]}]
+        # randomize the chatbot role
+        r = ChatService.randomize_role()
+        role = chatbotrole[r]["role"]
+
+        newsession = [{"role": "system", "content": role, "parts": [role], "rolenum": r, "model": "system"}]
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
         try:
@@ -37,11 +60,11 @@ class ChatService:
                 messages=newsession
             )
             mytext = response.choices[0].message.content
-            newsession.append({"role": "model", "content": mytext, "parts": [mytext]})
+            newsession.append({"role": "model", "content": mytext, "parts": [mytext], "rolenum": r, "model": "gpt"})
         except Exception as e:
             print(f"Exception occurred: {e}")
             mytext = "Sorry, there was an error processing your request."
-            newsession.append({"role": "model", "content": mytext, "parts": [mytext]})
+            newsession.append({"role": "model", "content": mytext, "parts": [mytext], "rolenum": r, "model": "gpt"})
             
         session.append(newsession)
         return newsession
@@ -60,24 +83,37 @@ class ChatService:
         """Get chat history as formatted string"""
         history = ""
         for i in range(2, len(current_session[0])):
-            history = f"""{history}
-                        {current_session[0][i]['role']}: {current_session[0][i]['parts'][0]}
+            if current_session[0][i]['role'] == 'user':
+                history = f"""{history}
+                        User: {current_session[0][i]['parts'][0]}
                     """
+            else:
+                history = f"""{history}
+                            {chatbotrole[current_session[0][i]['rolenum']]['name']}: [{current_session[0][i]['model']}] {current_session[0][i]['parts'][0]}
+                        """
         return history
 
     @staticmethod
     def generate_response(prompt, model_name):
         """Generate response using specified model"""
-        current_session[0].append({"role": "user", "content": prompt, "parts": [prompt]})
-        
+        m = ChatService.randomize_model()
+
         try:
-            if model_name == "claude":
+            if m==1: #model_name == "claude":
+                r = ChatService.randomize_role()
+                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "claude"})
                 return ChatService._generate_claude_response()
-            elif model_name == "gemini":
+            elif m==2: #model_name == "gemini":
+                r = current_session[0][0]["rolenum"]
+                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "gemini"})
                 return ChatService._generate_gemini_response()
-            elif model_name == "grok":
+            elif m==3: #model_name == "grok":
+                r = current_session[0][0]["rolenum"]
+                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "grok"})
                 return ChatService._generate_grok_response()
             else:  # default to OpenAI
+                r = ChatService.randomize_role()
+                current_session[0].append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "gpt"})
                 return ChatService._generate_openai_response()
         except Exception as e:
             print(f"Exception occurred: {e}")
@@ -88,11 +124,12 @@ class ChatService:
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         messages = [{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} 
                    for msg in current_session[0] if msg["role"] != "system"]
+        role = chatbotrole[current_session[0][-1]["rolenum"]]["role"]
         response = client.messages.create(
             model="claude-3-5-haiku-latest",
             max_tokens=1000,
             messages=messages,
-            system=chatbotrole
+            system=role
         )
         return response.content[0].text
 
@@ -122,13 +159,17 @@ class ChatService:
     @staticmethod
     def _generate_openai_response():
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        response = client.chat.completions.create(
+        role = chatbotrole[current_session[0][-1]["rolenum"]]["role"]
+        #response = client.chat.completions.create(
+        response = client.responses.create(
             model="gpt-4o-mini",
             store=True,
-            messages=[{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} 
-                     for msg in current_session[0]],
+            instructions=role,
+            input=[{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} 
+                     for msg in current_session[0] if msg["role"] != "system"],
         )
-        return response.choices[0].message.content
+        #return response.choices[0].message.content
+        return response.output_text
 
 # Initialize first session
 current_session.append(ChatService.create_new_session())
@@ -153,7 +194,9 @@ def chat():
     model_name = data['model']
     
     response_text = ChatService.generate_response(prompt, model_name)
-    current_session[0].append({"role": "model", "content": response_text, "parts": [response_text]})
+    r = current_session[0][-1]["rolenum"]
+    m = current_session[0][-1]["model"]
+    current_session[0].append({"role": "model", "content": response_text, "parts": [response_text], "rolenum": r, "model": m})
     
     return jsonify({
         "response": response_text,
