@@ -89,8 +89,9 @@ class ChatService:
                     """
             else:
                 history = f"""{history}
-                            {chatbotrole[current_session[0][i]['rolenum']]['name']}: [{current_session[0][i]['model']}] {current_session[0][i]['parts'][0]}
+                           <p>{chatbotrole[current_session[0][i]['rolenum']]['name']}: [{current_session[0][i]['model']}] {current_session[0][i]['parts'][0]}</p>
                         """
+        #print(markdown(history))
         return history
 
     @staticmethod
@@ -202,7 +203,7 @@ def chat():
         "response": response_text,
         "response_html": markdown(response_text),
         "history": ChatService.get_history(),
-        "history_html": markdown(ChatService.get_history())
+        "history_html": ChatService.get_history()
     })
 
 @app.route("/api/sessions", methods=["POST"])
