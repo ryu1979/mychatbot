@@ -1,8 +1,13 @@
 
 $(document).ready(function() {
+    // Initialize chat history from localStorage
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+
     // Load initial history
     loadHistory();
 
+    initializeChat();
+    
     // API Helper Functions
     function showStatus(message, type = 'info') {
         const statusDiv = $('#statusMessages');
@@ -52,8 +57,13 @@ $(document).ready(function() {
 
     // Chat Functions
     async function sendMessage(prompt, model) {
+        if (!prompt) {
+            showStatus('Please enter a prompt.', 'error');
+            return;
+        }
         try {
             const result = await apiRequest('/api/chat', 'POST', { prompt, model });
+            const result = await apiRequest('/api/chat', 'POST', { prompt, history: chatHistory });
             
             // Show the prompt
             $('#currentPrompt').show();
@@ -61,9 +71,16 @@ $(document).ready(function() {
             
             // Show the response
             $('#chatResponse').html(result.response_html);
+            $('#chatResponse').html(result.response_html); // This is the last response
             
             // Update history
             $('#chatHistory').html(result.history_html);
+            // Update local history and save
+            chatHistory = result.history;
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            
+            // Update history display
+            updateHistoryDisplay();
             
             // Clear the input
             $('#promptInput').val('');
@@ -79,6 +96,32 @@ $(document).ready(function() {
             await apiRequest('/api/sessions', 'POST');
             
             // Clear the display
+        // Save current chat to previous chats if it has content
+        if (chatHistory.length > 2) { // system + initial model message
+            const previousChats = JSON.parse(localStorage.getItem('previousChats')) || [];
+            previousChats.unshift(chatHistory); // Add to the beginning
+            // Keep only the last 6 chats
+            if (previousChats.length > 6) {
+                previousChats.pop();
+            }
+            localStorage.setItem('previousChats', JSON.stringify(previousChats));
+        }
+
+        // Start a new chat
+        chatHistory = [];
+        localStorage.removeItem('chatHistory');
+        await initializeChat();
+        showStatus('Chat cleared and saved. New chat started.', 'success');
+    }
+
+    async function restorePreviousChat(chatNum) {
+        const previousChats = JSON.parse(localStorage.getItem('previousChats')) || [];
+        const index = chatNum - 1;
+
+        if (previousChats[index]) {
+            chatHistory = previousChats[index];
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            updateHistoryDisplay();
             $('#currentPrompt').hide();
             $('#chatResponse').empty();
             $('#chatHistory').empty();
@@ -87,6 +130,9 @@ $(document).ready(function() {
             showStatus('Chat cleared successfully!', 'success');
         } catch (error) {
             // Error already handled in apiRequest
+            showStatus(`Restored previous chat ${chatNum}.`, 'success');
+        } else {
+            showStatus(`Previous chat ${chatNum} not found.`, 'error');
         }
     }
 
@@ -101,16 +147,64 @@ $(document).ready(function() {
                 showStatus(result.message, 'success');
             } else {
                 showStatus(result.message, 'error');
+    async function initializeChat() {
+        if (chatHistory.length === 0) {
+            try {
+                const result = await apiRequest('/api/new_session', 'GET');
+                chatHistory = result.history;
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            } catch (error) {
+                showStatus('Could not start a new session.', 'error');
             }
         } catch (error) {
             // Error already handled in apiRequest
         }
+        updateHistoryDisplay();
+        $('#currentPrompt').hide();
+        $('#chatResponse').empty();
+        $('#promptInput').val('');
+    }
+
+    function updateHistoryDisplay() {
+        const historyDiv = $('#chatHistory');
+        historyDiv.empty();
+        
+        // Skip system message and first model response for history view
+        const displayableHistory = chatHistory.slice(2); 
+
+        displayableHistory.forEach(msg => {
+            let messageHtml = '';
+            if (msg.role === 'user') {
+                messageHtml = `<p><strong>You:</strong> ${msg.content}</p>`;
+            } else if (msg.role === 'model') {
+                // This assumes your backend provides the necessary details.
+                // Let's build the HTML from the history object.
+                // NOTE: The python code was updated to send a pre-formatted history_html.
+                // We will use that instead for simplicity, but this is how you'd build it on the client.
+            }
+            // historyDiv.append(messageHtml);
+        });
+
+        // For now, let's just rebuild it from the full history object
+        let fullHistoryHtml = "";
+        chatHistory.slice(2).forEach(msg => {
+            if (msg.role === 'user') {
+                fullHistoryHtml += `<p><strong>You:</strong> ${msg.content}</p>`;
+            } else if (msg.role === 'model') {
+                // A 'name' property would be useful in the history object.
+                // For now, we can't display the personality name easily.
+                fullHistoryHtml += `<p><strong>Bot</strong> [${msg.model}]: ${msg.content}</p>`;
+            }
+        });
+        historyDiv.html(fullHistoryHtml);
     }
 
     async function loadHistory() {
         try {
             const result = await apiRequest('/api/history');
             $('#chatHistory').html(result.history_html);
+            // This function is now replaced by initializeChat and updateHistoryDisplay
+            // which use localStorage.
         } catch (error) {
             // Error already handled in apiRequest
         }
