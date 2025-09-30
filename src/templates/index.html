@@ -38,6 +38,10 @@
 			<div class="inner">
 				<a href="#" class="image avatar"><img src="{{ url_for('static', filename='dog.png') }}" alt="" /></a>
 				<h1><strong>I am a chat bot with multiple personalities</strong></h1>
+				<div id="personality-container" style="margin-bottom: 1em;">
+					<label for="personalitySelector" style="display: block; margin-bottom: 0.5em;">Choose a Personality:</label>
+					<select name="personality" id="personalitySelector" style="width: 100%; color: #555;"></select>
+				</div>
 				<form id="chatForm">
 					<input type="text" id="promptInput" name="prompt" placeholder="Enter prompt" required style="color: #555;" />
 					<div class="result">
@@ -82,15 +86,8 @@
 			<section id="four">
 				<h2>Previous Chats</h2>
 				<div class="result">
-					<ul class="actions">
-						<li>
-							<button type="button" data-previous="1" class="button previous-btn">Previous Chat 1</button>
-							<button type="button" data-previous="2" class="button previous-btn">Previous Chat 2</button>
-							<button type="button" data-previous="3" class="button previous-btn">Previous Chat 3</button>
-							<button type="button" data-previous="4" class="button previous-btn">Previous Chat 4</button>
-							<button type="button" data-previous="5" class="button previous-btn">Previous Chat 5</button>
-							<button type="button" data-previous="6" class="button previous-btn">Previous Chat 6</button>
-						</li>
+					<ul class="actions" id="previousChatsContainer">
+						<!-- Chat previews will be dynamically inserted here -->
 					</ul>
 				</div>
 			</section>

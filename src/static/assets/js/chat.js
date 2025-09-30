@@ -2,11 +2,10 @@
 $(document).ready(function() {
     // Initialize chat history from localStorage
     let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    let personalities = []; // Cache for personality data
 
     // Load initial history
-    loadHistory();
-
-    initializeChat();
+    loadPersonalities();
     
     // API Helper Functions
     function showStatus(message, type = 'info') {
@@ -62,40 +61,31 @@ $(document).ready(function() {
             return;
         }
         try {
-            const result = await apiRequest('/api/chat', 'POST', { prompt, model });
-            const result = await apiRequest('/api/chat', 'POST', { prompt, history: chatHistory });
+            const rolenum = $('#personalitySelector').val();
+            const result = await apiRequest('/api/chat', 'POST', { prompt, history: chatHistory, rolenum: parseInt(rolenum) });
             
             // Show the prompt
             $('#currentPrompt').show();
             $('#promptDisplay').text(`"${prompt}"`);
             
             // Show the response
-            $('#chatResponse').html(result.response_html);
             $('#chatResponse').html(result.response_html); // This is the last response
             
-            // Update history
-            $('#chatHistory').html(result.history_html);
             // Update local history and save
             chatHistory = result.history;
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             
             // Update history display
-            updateHistoryDisplay();
+            $('#chatHistory').html(result.history_html);
             
             // Clear the input
             $('#promptInput').val('');
-            
-            //showStatus('Message sent successfully!', 'success');
         } catch (error) {
             // Error already handled in apiRequest
         }
     }
 
     async function clearChat() {
-        try {
-            await apiRequest('/api/sessions', 'POST');
-            
-            // Clear the display
         // Save current chat to previous chats if it has content
         if (chatHistory.length > 2) { // system + initial model message
             const previousChats = JSON.parse(localStorage.getItem('previousChats')) || [];
@@ -105,6 +95,7 @@ $(document).ready(function() {
                 previousChats.pop();
             }
             localStorage.setItem('previousChats', JSON.stringify(previousChats));
+            updatePreviousChatsDisplay();
         }
 
         // Start a new chat
@@ -118,46 +109,42 @@ $(document).ready(function() {
         const previousChats = JSON.parse(localStorage.getItem('previousChats')) || [];
         const index = chatNum - 1;
 
-        if (previousChats[index]) {
-            chatHistory = previousChats[index];
+        if (previousChats[index]) {            
+            // Save the current chat before swapping, if it has any user interaction
+            if (chatHistory.length > 2) {
+                // The chat we are restoring is at `index`. We place the current chat there.
+                const chatToRestore = previousChats.splice(index, 1, chatHistory)[0];
+                chatHistory = chatToRestore;
+            } else {
+                // If current chat is empty, just load the old one and remove it from the previous list.
+                chatHistory = previousChats.splice(index, 1)[0];
+            }
+
+            // Update localStorage
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            localStorage.setItem('previousChats', JSON.stringify(previousChats));
+            updatePreviousChatsDisplay();
+
+            // Update UI
             updateHistoryDisplay();
             $('#currentPrompt').hide();
             $('#chatResponse').empty();
-            $('#chatHistory').empty();
-            $('#promptInput').val('');
-            
-            showStatus('Chat cleared successfully!', 'success');
-        } catch (error) {
-            // Error already handled in apiRequest
             showStatus(`Restored previous chat ${chatNum}.`, 'success');
         } else {
             showStatus(`Previous chat ${chatNum} not found.`, 'error');
         }
     }
 
-    async function restorePreviousChat(chatNum) {
-        try {
-            const result = await apiRequest(`/api/sessions/${chatNum}`, 'PUT');
-            
-            if (result.success) {
-                $('#chatHistory').html(result.history_html);
-                $('#currentPrompt').hide();
-                $('#chatResponse').empty();
-                showStatus(result.message, 'success');
-            } else {
-                showStatus(result.message, 'error');
     async function initializeChat() {
         if (chatHistory.length === 0) {
             try {
-                const result = await apiRequest('/api/new_session', 'GET');
+                const rolenum = $('#personalitySelector').val();
+                const result = await apiRequest(`/api/new_session?rolenum=${rolenum}`, 'GET');
                 chatHistory = result.history;
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             } catch (error) {
                 showStatus('Could not start a new session.', 'error');
             }
-        } catch (error) {
-            // Error already handled in apiRequest
         }
         updateHistoryDisplay();
         $('#currentPrompt').hide();
@@ -165,44 +152,72 @@ $(document).ready(function() {
         $('#promptInput').val('');
     }
 
+    async function loadPersonalities() {
+        try {
+            const personalityList = await apiRequest('/api/personalities', 'GET');
+            personalities = personalityList; // Cache the list
+            const selector = $('#personalitySelector');
+            selector.empty();
+            personalityList.forEach(p => {
+                selector.append(`<option value="${p.rolenum}">${p.name}</option>`);
+            });
+            // Now that personalities are loaded, initialize the chat
+            await initializeChat();
+            updatePreviousChatsDisplay();
+            updateHistoryDisplay();
+        } catch (error) {
+            showStatus('Could not load personalities.', 'error');
+        }
+    }
+
     function updateHistoryDisplay() {
         const historyDiv = $('#chatHistory');
         historyDiv.empty();
-        
-        // Skip system message and first model response for history view
-        const displayableHistory = chatHistory.slice(2); 
 
-        displayableHistory.forEach(msg => {
-            let messageHtml = '';
-            if (msg.role === 'user') {
-                messageHtml = `<p><strong>You:</strong> ${msg.content}</p>`;
-            } else if (msg.role === 'model') {
-                // This assumes your backend provides the necessary details.
-                // Let's build the HTML from the history object.
-                // NOTE: The python code was updated to send a pre-formatted history_html.
-                // We will use that instead for simplicity, but this is how you'd build it on the client.
-            }
-            // historyDiv.append(messageHtml);
-        });
+        if (personalities.length === 0) {
+            // Don't try to render history until personalities are loaded
+            return;
+        }
 
-        // For now, let's just rebuild it from the full history object
         let fullHistoryHtml = "";
-        chatHistory.slice(2).forEach(msg => {
+        chatHistory.slice(2).forEach(msg => { // slice(2) to skip system and initial model message
             if (msg.role === 'user') {
                 fullHistoryHtml += `<p><strong>You:</strong> ${msg.content}</p>`;
             } else if (msg.role === 'model') {
-                // A 'name' property would be useful in the history object.
-                // For now, we can't display the personality name easily.
-                fullHistoryHtml += `<p><strong>Bot</strong> [${msg.model}]: ${msg.content}</p>`;
+                const personality = personalities.find(p => p.rolenum === msg.rolenum) || { name: 'Bot' };
+                fullHistoryHtml += `<p><strong>${personality.name}</strong> [${msg.model}]: ${msg.content}</p>`;
             }
         });
         historyDiv.html(fullHistoryHtml);
     }
 
+    function updatePreviousChatsDisplay() {
+        const container = $('#previousChatsContainer');
+        container.empty();
+        const previousChats = JSON.parse(localStorage.getItem('previousChats')) || [];
+
+        if (previousChats.length > 0) {
+            const list = $('<li></li>');
+            previousChats.forEach((chat, index) => {
+                // Find the first model response to use as a preview
+                const firstModelResponse = chat.find(msg => msg.role === 'model');
+                let previewText = `Chat ${index + 1}`;
+                if (firstModelResponse) {
+                    // Find the personality for this chat
+                    const personality = personalities.find(p => p.rolenum === firstModelResponse.rolenum);
+                    const personalityName = personality ? personality.name : 'Bot';
+                    previewText = `${personalityName}: ${firstModelResponse.content.substring(0, 25)}...`;
+                }
+                
+                const button = $(`<button type="button" data-previous="${index + 1}" class="button previous-btn">${previewText}</button>`);
+                list.append(button);
+            });
+            container.append(list);
+        }
+    }
+
     async function loadHistory() {
         try {
-            const result = await apiRequest('/api/history');
-            $('#chatHistory').html(result.history_html);
             // This function is now replaced by initializeChat and updateHistoryDisplay
             // which use localStorage.
         } catch (error) {
@@ -230,7 +245,7 @@ $(document).ready(function() {
         clearChat();
     });
 
-    $('.previous-btn').on('click', function(e) {
+    $('#previousChatsContainer').on('click', '.previous-btn', function(e) {
         e.preventDefault();
         const chatNum = $(this).data('previous');
         restorePreviousChat(chatNum);
