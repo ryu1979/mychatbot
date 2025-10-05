@@ -102,7 +102,6 @@ $(document).ready(function() {
         chatHistory = [];
         localStorage.removeItem('chatHistory');
         await initializeChat();
-        showStatus('Chat cleared and saved. New chat started.', 'success');
     }
 
     async function restorePreviousChat(chatNum) {
@@ -243,7 +242,18 @@ $(document).ready(function() {
     $('#clearBtn').on('click', function(e) {
         e.preventDefault();
         clearChat();
+        showStatus('Chat cleared and saved. New chat started.', 'success');
     });
+
+    $('#clearCacheBtn').on('click', function(e) {
+        e.preventDefault();
+        clearChat();
+        localStorage.removeItem('previousChats');
+        localStorage.removeItem('chatHistory');
+        updatePreviousChatsDisplay();
+        showStatus('Previous chats cleared from cache!', 'success');
+    });
+
 
     $('#previousChatsContainer').on('click', '.previous-btn', function(e) {
         e.preventDefault();

@@ -1,6 +1,7 @@
 import os
 from signal import signal, SIGINT
-import google.generativeai as genai
+#import google.generativeai as genai
+from google import genai
 from openai import OpenAI
 from dotenv import load_dotenv
 from anthropic import Anthropic
@@ -39,12 +40,11 @@ class ChatService:
     @staticmethod
     def create_new_session(rolenum=None):
         """Create a new chat session"""
-        r = rolenum if rolenum is not None else ChatService.randomize_role()
-        role = chatbotrole[r]["role"]
-        
-        new_session = [{"role": "system", "content": role, "parts": [role], "rolenum": r, "model": "system"}]
-
-        return new_session
+        return []
+        #r = rolenum if rolenum is not None else ChatService.randomize_role()
+        #role = chatbotrole[r]["role"]        
+        #new_session = [{"role": "system", "content": role, "parts": [role], "rolenum": r, "model": "system"}]
+        #return new_session
 
     @staticmethod
     def generate_response(prompt, history, rolenum=None):
@@ -59,12 +59,10 @@ class ChatService:
                 response_text = ChatService._generate_claude_response(history)
                 history.append({"role": "model", "content": response_text, "parts": [response_text], "rolenum": r, "model": "claude"})
             elif model_choice == "gemini":
-                r = history[0]["rolenum"]
                 history.append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "gemini"})
                 response_text = ChatService._generate_gemini_response(history)
                 history.append({"role": "model", "content": response_text, "parts": [response_text], "rolenum": r, "model": "gemini"})
             elif model_choice == "grok":
-                r = history[0]["rolenum"]
                 history.append({"role": "user", "content": prompt, "parts": [prompt], "rolenum": r, "model": "grok"})
                 response_text = ChatService._generate_grok_response(history)
                 history.append({"role": "model", "content": response_text, "parts": [response_text], "rolenum": r, "model": "grok"})
@@ -95,10 +93,14 @@ class ChatService:
 
     @staticmethod
     def _generate_gemini_response(history):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        m = genai.GenerativeModel('gemini-2.5-flash')
-        response = m.generate_content([{"role": msg["role"], "parts": msg["parts"]} 
-                                     for msg in history if msg["role"] != "system"])
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        role = chatbotrole[history[-1]["rolenum"]]["role"]
+        response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                config=genai.types.GenerateContentConfig(
+                    system_instruction=role),
+                contents=history[-1]["parts"]
+                )
         return response.text
 
     @staticmethod
@@ -107,14 +109,15 @@ class ChatService:
             api_key=os.getenv("GROK_API_KEY"),
             base_url="https://api.x.ai/v1",
         )
-        response = client.chat.completions.create(
+        role = chatbotrole[history[-1]["rolenum"]]["role"]
+        response = client.responses.create(
             model="grok-3",
-            messages=[{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} 
-                     for msg in history],
-            max_tokens=1000,
-            temperature=0.2,
+            store=True,
+            instructions=role,
+            input=[{"role": msg["role"].replace("model","assistant"), "content": msg["content"]} 
+                     for msg in history if msg["role"] != "system"],
         )
-        return response.choices[0].message.content
+        return response.output_text   
 
     @staticmethod
     def _generate_openai_response(history):
